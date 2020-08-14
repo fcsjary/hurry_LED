@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta http-equiv="Cache-Controll" content="no-cache" />
+		<title>成都涵睿科技LED控制系统</title>
+		<script type="text/javascript" src="js/jquery-1.6.2.min.js"></script>
+		<script src="js/jquery.confirm.js"></script>
+		<script src="js/script.js"></script>
+		<link rel="stylesheet" type="text/css" href="css/styles.css" />
+		<link rel="stylesheet" type="text/css" href="css/jquery.confirm.css" />
+		
+		<style type="text/css">
+			*{
+				font-family:Microsoft YaHei;
+			}
+			body{
+			   overflow: hidden;
+			}
+			::-webkit-scrollbar {
+			      width: 20px;
+			   }
+
+			  /* Track */
+			 ::-webkit-scrollbar-track {
+			    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+			    -webkit-border-radius: 10px;
+			    border-radius: 10px;
+			   }
+			
+			/* Handle */
+			 ::-webkit-scrollbar-thumb {
+			    -webkit-border-radius: 10px;
+			    border-radius: 10px;
+			    background: rgba(231,231,231,0.8);
+			    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+			}
+			 ::-webkit-scrollbar-thumb:window-inactive {
+			    background: rgba(231,231,231,0.4);
+			   }
+			#main{
+				overflow-y: scroll;
+				width:85%;
+				max-height:640px;
+				margin: auto;
+			}
+			
+			.button:HOVER{
+				background-image:url("images/2.gif");
+			}
+			.button{
+				float: left;
+				background: rgba(0, 0, 0, 0.0);
+				background-image:url("images/1.gif");
+				background-size:94px 62px; 
+				background-repeat:repeat;
+				width: 94px;
+				height: 62px;
+				text-align: center;
+				margin-left: 10px;
+				cursor: pointer;
+				border:0px;
+				color:black;
+			}
+			table{
+				border-top: 1px solid gray;
+				width: 100%;
+			}
+			td{
+				border-bottom: 1px solid gray;
+				border-right: 1px solid gray;
+			}
+			td.lb{
+				border-left: 1px solid gray;
+				text-align: center;
+			}
+			label{
+				cursor: pointer;
+			}
+			.nber{
+				font-size:20px;
+			}
+			.st{
+				font-size:18px;
+			}
+			.working{
+				color:red;
+				font-size:18px;
+			}
+			.over{
+				color:gray;
+				font-size:18px;
+			}
+		</style>
+		<script type="text/javascript">
+			var names = [];
+			var ids=[];
+			var maxLength=6;
+			var tmp_=[];
+			
+			var tmp_ids=[];
+			function loadTable(){
+				//initNames();
+				initButton();
+			}
+			
+			function initNames(){
+				for(var i=0;i<names.length;i++){
+					if($("#"+names[i]).html()==null){
+						var ht = createDishesHTML(names[i]);
+						$("#content").html($("#content").html()+ht);
+					}
+				}
+			}
+			
+			function initButton(){
+				var tm=0;
+				var tmpName = "";
+				for(var i=0;i<ids.length;i++){
+					if($("#"+ids[i].name).html()==null){
+						var ht = createDishesHTML(ids[i].name);
+						$("#content").html($("#content").html()+ht);
+					}
+					tmp_ids[ids[i].id]=ids[i];
+					var name=ids[i].name;
+					 if(name==tmpName){
+					 	tm++;
+					 }else{
+					 	tm=0;
+					 	$("#"+name+"_button").html("");
+					 }
+					if(tm<maxLength){
+						var ht = createButtonHTML(ids[i].id,ids[i].keyId,ids[i].status,name);
+						$("#"+name+"_button").html($("#"+name+"_button").html()+ht);
+					};
+					tmpName=name;
+				}
+			}
+			
+			function createButtonHTML(id,kid,status,name){
+				var button = "<button class=\"button\" id=\"button_"+id+"\" onclick=\"change('"+id+"','"+name+"')\" name=\""+name+"_button\"><label class=\"nber\">"+kid+"</label><br/>"+getStatusHTML(status)+"</button>";
+				return button;
+			}
+			
+			function createDishesHTML(name){
+				var html = "<tr id=\""+name+"\"><td width=\"20%\" class=\"lb\"><h2>"+name+"</h2></td>"+
+				"<td align=\"left\" id=\""+name+"_button\" ></td></tr>";
+				return html;
+			}
+			
+			function changeStatusHTML(stu){
+				//if(stu=="等待中")
+					//return "<lable class='working'>制作中<lable>";
+				if(stu=="等待中")
+					return "<lable class='over'>已完成<lable>";
+			}
+			
+			function getStatusHTML(stu){
+				if(stu=="等待中")
+					return "<lable class='st'>等待中<lable>";
+				if(stu=="制作中")
+					return "<lable class='working'>制作中<lable>";
+				if(stu=="已完成")
+					return "<lable class='over'>已完成<lable>";
+			}
+			
+			function change(id,name){
+				var obj = tmp_ids[id];
+				var id = obj.id;
+				var tempStatus = obj.status;
+				var htmlObj = $("#button_"+id);
+				if(tempStatus=="已完成"){
+					document.getElementById("button_"+id).style.display="none";
+					//htmlObj.css('display','none');
+				}else{
+					htmlObj.html("<label class=\"nber\">"+obj.keyId+"</label><br/>"+changeStatusHTML(obj.status+""));
+				}
+				doAjax("/ajax",{type:"changeQueue",id:id,name:obj.name},"POST",function(r2,d){
+					if(r2!="error"){
+						if(tempStatus=="已完成"){
+							doAjax("/ajax",{type:"getAllQueues"},"POST",function(r2,d){
+								ids=JSON.parse(r2);
+								initButton();
+							});
+							htmlObj.remove();
+							if($("#"+name+"_button").html()==""){
+								$("#"+name).remove();
+							};
+						}else{
+							tmp_ids[id]=JSON.parse(r2);
+						}
+					}else{
+						if(tempStatus=="已完成"){
+							document.getElementById("button_"+id).style.display="";
+							//htmlObj.css('display','');
+						}else{
+							htmlObj.html("<label class=\"nber\">"+obj.keyId+"</label><br/>"+getStatusHTML(tempStatus));
+						}
+					}
+				});
+			}
+			
+			function init(){
+					doAjax("/ajax",{type:"getAllQueues"},"POST",function(r2,d){
+						ids=JSON.parse(r2);
+						loadTable();
+					});
+			}
+			
+			function clear(){
+				$("#content").html("");
+			}
+			
+			function reload(){
+				clear();
+				init();
+			}
+			function getNewData(){
+				 doAjax("/ajax",{type:"hasNewMsg"},"POST",function(r2,d){
+						if(r2=="true"){
+							doAjax("/ajax",{type:"getAllQueues"},"POST",function(r2,d){
+								ids=JSON.parse(r2);
+								initButton();
+							});
+						}
+					});
+			}
+			setInterval(function(){
+				getNewData();
+			},1000);
+			function doAjax(url,data,type,fct){
+				$.ajax({
+					type:type,
+					url:url,
+					data :data,
+					success : fct
+				});
+			}
+			//window.close();
+		</script>
+	</head>
+	<body onload="init();" onselectstart="return false;" oncontextmenu="return false;">
+		<div style="width: 80%;height:50px;margin: auto;">
+			<h1 align="center" id="a">LED 控制系统</h1>
+		</div>
+		<div style="height: 600px;">
+		<div id="main" >
+			<table cellspacing="0" id="content">
+			</table>
+		</div>
+		</div>
+		<div class="foot" style=" position:fixed;bottom: 0;right: 0">
+			<button id="out" class="button" style="right:0;font-size: 25px;text-align: center;" >
+			<label>退出</label>
+			</button>
+			<button id="reload" onclick="reload();" class="button" style="right:0;font-size: 25px;text-align: center;" >
+			<label>刷新</label>
+			</button>
+		</div>
+	</body>
+</html>
